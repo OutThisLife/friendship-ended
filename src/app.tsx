@@ -16,6 +16,10 @@ const Wrapper = styled.div`
     overflow: hidden;
     background: url(${require('./tmpl.jpg')}) center / cover no-repeat;
 
+    @media (max-width: 1200px) {
+      width: 80vw;
+    }
+
     > img {
       pointer-events: none;
       position: absolute;

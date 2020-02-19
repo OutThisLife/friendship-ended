@@ -56,7 +56,7 @@ const Wrapper = styled.div`
 `
 
 export default () => {
-  const $wrapper = useRef<HTMLElement>(null)
+  const $wrapper = useRef<HTMLDivElement>(null)
 
   const convert = useCallback(
     async e => {
@@ -78,17 +78,50 @@ export default () => {
 
       el.style.backgroundImage = ''
 
-      download(
-        await html2image.toJpeg(el),
-        `friendship-ended-${
-          document.querySelector('[contenteditable]:first-of-type')?.textContent
-        }`
-      )
+      download(await html2image.toJpeg(el), `friendship-ended`)
 
       $img.src = ''
     },
     [$wrapper]
   )
+
+  React.useEffect(() => {
+    if (!($wrapper.current instanceof HTMLElement)) {
+      return
+    }
+
+    let t: number
+
+    const init = new URLSearchParams(location.search)
+    const params = new URLSearchParams()
+
+    const k0 = document.querySelector('#meh') as SVGTextElement
+    const k1 = document.querySelector('#bff') as SVGTextElement
+
+    if (init.has('meh') && init.has('bff')) {
+      k0.textContent = decodeURIComponent(init.get('meh') as string)
+      k1.textContent = decodeURIComponent(init.get('bff') as string)
+    }
+
+    const watch = () => {
+      params.set('meh', k0.textContent as string)
+      params.set('bff', k1.textContent as string)
+
+      const s = `?${params.toString()}`
+
+      if (location.search !== s) {
+        history.replaceState({}, document.title, `${location.origin}${s}`)
+      }
+
+      t = window.requestAnimationFrame(watch)
+    }
+
+    t = window.requestAnimationFrame(watch)
+
+    return () => {
+      window.cancelAnimationFrame(t)
+    }
+  }, [$wrapper])
 
   return (
     <Wrapper ref={$wrapper}>
@@ -97,6 +130,7 @@ export default () => {
 
         <figcaption>
           <Text
+            id="meh"
             size={85 / 4}
             x="2%"
             y="10%"
@@ -108,6 +142,7 @@ export default () => {
           </Text>
 
           <Text
+            id="bff"
             size={58 / 5}
             y={6}
             stops={{
@@ -127,11 +162,12 @@ export default () => {
 }
 
 const Text: React.FC<{
+  id: string
   size: number
   x?: string | number
   y?: string | number
   stops: { [key: number]: string }
-}> = ({ children, size = 1, x = '50', y = '20%', stops = {} }) => {
+}> = ({ children, id, size = 1, x = '50', y = '20%', stops = {} }) => {
   const ref = useRef<HTMLElement>(null)
 
   const onInput = useCallback(
@@ -175,7 +211,7 @@ const Text: React.FC<{
             filter: 'blur(1px)',
             paintOrder: 'stroke fill'
           }}
-          {...{ x, y }}>
+          {...{ id, x, y }}>
           {children}
         </text>
       </svg>

@@ -1,0 +1,19 @@
+html {
+  font-family: monospace;
+}
+
+body {
+  // background: fixed #130d40 url(./tmpl.jpg) repeat;
+  // background-blend-mode: saturation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+a {
+  color: #0000ee;
+}

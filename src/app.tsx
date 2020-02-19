@@ -9,7 +9,7 @@ const Wrapper = styled.div`
 
   figure {
     position: relative;
-    width: 70vw;
+    width: 52vw;
     height: 0px;
     padding-top: 76%;
     margin: auto;

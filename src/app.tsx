@@ -61,7 +61,6 @@ const Wrapper = styled.div`
 
 export default () => {
   const $wrapper = useRef<HTMLDivElement>(null)
-  const vars = ['meh', 'bff']
 
   useEffect(() => {
     if (!($wrapper.current instanceof HTMLElement)) {
@@ -70,13 +69,21 @@ export default () => {
 
     const cv = $wrapper.current.firstElementChild as HTMLCanvasElement
     const ctx = cv.getContext('2d') as CanvasRenderingContext2D
-    const state: any = {}
+    const state: any = {
+      params: new URLSearchParams(location.search)
+    }
 
     const update = () => {
       ctx.clearRect(0, 0, cv.width, cv.height)
 
       cv.width = window.innerWidth
       cv.height = window.innerHeight
+
+      const s = `?${state.params.toString()}`
+
+      if (location.search !== s) {
+        history.replaceState({}, document.title, `${location.origin}${s}`)
+      }
     }
 
     const setBG = () => {
@@ -130,14 +137,18 @@ export default () => {
       const el = [].slice.call($wrapper.current.querySelectorAll('form div'))[
         i
       ] as HTMLElement
+      const $input = el.firstElementChild as HTMLInputElement
 
       el.style.setProperty('--tx', `${x}px`)
       el.style.setProperty('--ty', `${y * 1.7}px`)
       el.style.setProperty('--tw', `${tw.width * 2}px`)
 
-      const text = (el.firstElementChild as HTMLInputElement).value
-        .trim()
-        .toUpperCase()
+      const k = $input.name
+      const v = $input.value.trim().toUpperCase()
+
+      if ('params' in state) {
+        state.params.set(k, v.toLowerCase())
+      }
 
       return [
         { tw, fillGradient, strokeGradient },
@@ -146,7 +157,7 @@ export default () => {
             ctx.lineWidth = 3
             ctx.fillStyle = fillGradient
             ctx.strokeStyle = strokeGradient
-            ctx.strokeText(text, x, y)
+            ctx.strokeText(v, x, y)
           }
 
           {
@@ -156,23 +167,16 @@ export default () => {
             thinStrokeGrad.addColorStop(0.8, '#1E3278ee')
             thinStrokeGrad.addColorStop(0.5, '#1E3278ee')
 
-            ctx.strokeText(text, x, y)
+            ctx.strokeText(v, x, y)
           }
 
-          ctx.fillText(text, x, y)
+          ctx.fillText(v, x, y)
         }
       ]
     }
 
     const render = () => {
-      if (!('im' in state)) {
-        const im = new Image()
-
-        im.onload = setBG
-        im.src = require('./tmpl.jpg')
-
-        return Object.assign(state, { im })
-      }
+      setBG()
 
       const { cx, cy, r, width, height } = state.im
 
@@ -182,8 +186,6 @@ export default () => {
         $wrapper.current.style.setProperty('--w', `${width}px`)
         $wrapper.current.style.setProperty('--h', `${height}px`)
       }
-
-      setBG()
 
       ctx.save()
       ctx.scale(1, 1.7)
@@ -232,10 +234,28 @@ export default () => {
 
     const loop = async () => {
       update()
-      render()
+
+      if (!('im' in state)) {
+        const im = new Image()
+
+        im.onload = setBG
+        im.src = require('./tmpl.jpg')
+
+        Object.assign(state, { im })
+      } else {
+        render()
+      }
 
       raf = window.requestAnimationFrame(loop)
     }
+
+    state.params.forEach((v, k) => {
+      const $input = document.querySelector(`input[name="${k}"]`)
+
+      if ($input instanceof HTMLInputElement) {
+        $input.value = v
+      }
+    })
 
     let raf = window.requestAnimationFrame(loop)
 
@@ -243,6 +263,11 @@ export default () => {
       window.cancelAnimationFrame(raf)
     }
   }, [$wrapper])
+
+  const events: any = {
+    onFocus: e => e.target.select(),
+    onKeyDown: e => /enter|escape/i.test(e.key) && e.currentTarget.blur()
+  }
 
   return (
     <Wrapper ref={$wrapper}>
@@ -257,7 +282,7 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={8}
-            onFocus={e => e.target.select()}
+            {...events}
           />
         </div>
 
@@ -269,7 +294,7 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={32}
-            onFocus={e => e.target.select()}
+            {...events}
           />
         </div>
       </form>

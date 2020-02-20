@@ -18,9 +18,6 @@
     "typescript": "^3.7.5"
   },
   "dependencies": {
-    "downloadjs": "^1.4.7",
-    "html-to-image": "^0.1.1",
-    "html2canvas": "^1.0.0-rc.5",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "styled-components": "^5.0.1"

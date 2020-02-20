@@ -73,11 +73,18 @@ export default () => {
       params: new URLSearchParams(location.search)
     }
 
+    const dpr = window.devicePixelRatio || 1
+    const lowres = dpr * 0.4
+    const hires = dpr * 1.7
+
+    ctx.scale(dpr, dpr)
+    ctx.imageSmoothingEnabled = true
+
     const update = () => {
       ctx.clearRect(0, 0, cv.width, cv.height)
 
-      cv.width = window.innerWidth
-      cv.height = window.innerHeight
+      cv.width = window.innerWidth * dpr
+      cv.height = window.innerHeight * dpr
 
       const s = `?${state.params.toString()}`
 
@@ -188,7 +195,7 @@ export default () => {
       }
 
       ctx.save()
-      ctx.scale(1, 1.7)
+      ctx.scale(dpr, dpr * 1.7)
 
       // MUDASIR
       {

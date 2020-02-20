@@ -17,7 +17,7 @@ const Wrapper = styled.div`
     position: fixed;
     left: 0;
     right: calc(var(--cx) + 1em);
-    mix-blend-mode: luminosity;
+    mix-blend-mode: multiply;
 
     &:first-child {
       top: calc(var(--cy));
@@ -39,8 +39,8 @@ const Wrapper = styled.div`
       display: block;
       width: 100%;
       height: var(--tw);
-      caret-color: #fff;
-      color: transparent;
+      caret-color: #00f;
+      color: #fff;
       font-size: calc(var(--tw) / 1.4);
       font-family: Impact;
       letter-spacing: 0.02em;
@@ -51,13 +51,9 @@ const Wrapper = styled.div`
       transform: scale(0.93, 1.7);
 
       &:focus {
-        outline: 2px dashed #fff;
-        background: #ffffff22;
-      }
-
-      &::selection {
-        color: transparent;
-        background: #fff;
+        outline: 2px dashed #f00;
+        color: #000;
+        background: #f0000eee;
       }
     }
   }
@@ -261,6 +257,7 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={8}
+            onFocus={e => e.target.select()}
           />
         </div>
 
@@ -272,6 +269,7 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={32}
+            onFocus={e => e.target.select()}
           />
         </div>
       </form>

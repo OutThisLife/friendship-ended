@@ -5,13 +5,22 @@ import styled from 'styled-components'
 const Wrapper = styled.div`
   canvas {
     z-index: 0;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position: relative;
     width: 100vw;
     height: 100vh;
+  }
+
+  img {
+    opacity: 0;
+    z-index: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    &::selection {
+      background: none;
+    }
   }
 
   form > div {
@@ -19,7 +28,7 @@ const Wrapper = styled.div`
     position: fixed;
     left: 0;
     right: calc(var(--cx) + 1em);
-    mix-blend-mode: multiply;
+    mix-blend-mode: overlay;
 
     &:first-child {
       top: calc(var(--cy));
@@ -40,21 +49,22 @@ const Wrapper = styled.div`
       display: block;
       width: 100%;
       height: var(--tw);
-      caret-color: #00f;
-      color: #fff;
+      caret-color: #fff;
+      color: transparent;
       font-size: calc(var(--tw) / 1.4);
       font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      border: 0;
-      background: none;
-      transform-origin: 5% center;
+      border: 1px solid;
+      border-width: 1px 2px;
       transform: scale(0.93, 1.7);
+      transform-origin: 5% center;
+      background: none;
 
       &:focus {
-        outline: 2px dashed #f00;
-        color: #000;
-        background: #f0000eee;
+        outline: none;
+        border-color: #0366d6;
+        background: #0366d633;
       }
     }
   }
@@ -68,22 +78,13 @@ export default () => {
       return
     }
 
-    const cv = $wrapper.current.firstElementChild as HTMLCanvasElement
+    const $img = $wrapper.current.querySelector('img') as HTMLImageElement
+    const cv = $wrapper.current.querySelector('canvas') as HTMLCanvasElement
     const ctx = cv.getContext('2d') as CanvasRenderingContext2D
+
     const state: any = {
       params: new URLSearchParams(location.search)
     }
-
-    const PIXEL_RATIO =
-      (window.devicePixelRatio || 1) /
-      (ctx.webkitBackingStorePixelRatio ||
-        ctx.mozBackingStorePixelRatio ||
-        ctx.msBackingStorePixelRatio ||
-        ctx.oBackingStorePixelRatio ||
-        ctx.backingStorePixelRatio ||
-        1)
-
-    ctx.imageSmoothingEnabled = true
 
     const update = () => {
       ctx.clearRect(0, 0, cv.width, cv.height)
@@ -118,7 +119,38 @@ export default () => {
         im.height * r
       )
 
-      Object.assign(im, { r, cx, cy })
+      Object.assign(im, { s, r, cx, cy })
+    }
+
+    const saveImage = () => {
+      const { cx, cy, r, width, height } = state.im
+      const im = new Image()
+
+      im.crossOrigin = 'anonymous'
+      im.onload = () => {
+        const tmp = document.createElement('canvas') as HTMLCanvasElement
+        const tctx = tmp.getContext('2d') as CanvasRenderingContext2D
+
+        tmp.width = width * r
+        tmp.height = height * r
+
+        tctx.drawImage(
+          im,
+          cx,
+          cy,
+          tmp.width,
+          tmp.height,
+          0,
+          0,
+          tmp.width,
+          tmp.height
+        )
+
+        $img.src = tmp.toDataURL('image/jpeg', 0.5)
+        $img.setAttribute('data-from', state.params.toString())
+      }
+
+      im.src = cv.toDataURL()
     }
 
     const addText = (
@@ -135,6 +167,8 @@ export default () => {
       () => void
     ] => {
       try {
+        const { params } = state
+
         ctx.font = `${s}px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif`
         ctx.textAlign = 'left'
         ctx.textBaseline = 'top'
@@ -155,9 +189,10 @@ export default () => {
 
         const k = $input.name
         const v = $input.value.trim().toUpperCase()
+        const vl = v.toLowerCase()
 
-        if ('params' in state) {
-          state.params.set(k, v.toLowerCase())
+        if (!params.has(k) || params.get(k) !== vl) {
+          params.set(k, vl)
         }
 
         return [
@@ -192,6 +227,7 @@ export default () => {
     const render = () => {
       setBG()
 
+      const { params } = state
       const { cx, cy, r, width, height } = state.im
 
       if ($wrapper.current instanceof HTMLElement) {
@@ -276,27 +312,34 @@ export default () => {
       raf = window.requestAnimationFrame(loop)
     }
 
-    state.params.forEach((v, k) => {
-      const $input = document.querySelector(`input[name="${k}"]`)
+    const $inputs = document.getElementsByTagName('input') as any
 
+    for (const $input of $inputs) {
       if ($input instanceof HTMLInputElement) {
-        $input.value = v
+        if (state.params.has($input.name)) {
+          $input.value = state.params.get($input.name)
+        }
+
+        $input.addEventListener(
+          'keydown',
+          e => /enter|escape/i.test(e.key) && $input.blur()
+        )
+
+        $input.addEventListener('blur', saveImage)
       }
-    })
+    }
 
     let raf = window.requestAnimationFrame(loop)
+    setTimeout(() => window.requestAnimationFrame(saveImage), 1e3)
 
     return () => {
       window.cancelAnimationFrame(raf)
     }
   }, [$wrapper])
 
-  const events: any = {
-    onKeyDown: e => /enter|escape/i.test(e.key) && e.currentTarget.blur()
-  }
-
   return (
     <Wrapper ref={$wrapper}>
+      <img />
       <canvas />
 
       <form method="post" action="#">
@@ -308,7 +351,6 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={8}
-            {...events}
           />
         </div>
 
@@ -320,7 +362,6 @@ export default () => {
             autoComplete="off"
             spellCheck="false"
             maxLength={32}
-            {...events}
           />
         </div>
       </form>

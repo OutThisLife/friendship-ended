@@ -37,7 +37,6 @@ const Wrapper = styled.div`
     }
 
     input {
-      user-select: none;
       display: block;
       width: 100%;
       height: var(--tw);

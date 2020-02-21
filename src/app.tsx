@@ -75,18 +75,21 @@ export default () => {
       params: new URLSearchParams(location.search)
     }
 
-    const dpr = window.devicePixelRatio || 1
-    const lowres = dpr * 0.4
-    const hires = dpr * 1.7
+    const PIXEL_RATIO =
+      (window.devicePixelRatio || 1) /
+      (ctx.webkitBackingStorePixelRatio ||
+        ctx.mozBackingStorePixelRatio ||
+        ctx.msBackingStorePixelRatio ||
+        ctx.oBackingStorePixelRatio ||
+        ctx.backingStorePixelRatio ||
+        1)
 
-    ctx.scale(dpr, dpr)
+    cv.width = window.innerWidth
+    cv.height = window.innerHeight
     ctx.imageSmoothingEnabled = true
 
     const update = () => {
       ctx.clearRect(0, 0, cv.width, cv.height)
-
-      cv.width = window.innerWidth * dpr
-      cv.height = window.innerHeight * dpr
 
       const s = `?${state.params.toString()}`
 
@@ -98,7 +101,8 @@ export default () => {
     const setBG = () => {
       const { im } = state
 
-      const r = Math.min(cv.width / im.width / 1.2, cv.height / im.height / 1.2)
+      const s = window.innerWidth < 1025 ? 1 : 1.2
+      const r = Math.min(cv.width / im.width / s, cv.height / im.height / s)
       const cx = (cv.width - im.width * r) / 2
       const cy = (cv.height - im.height * r) / 2
 
@@ -130,58 +134,59 @@ export default () => {
       },
       () => void
     ] => {
-      if (!($wrapper.current instanceof HTMLElement)) {
+      try {
+        ctx.font = `${s}px impact`
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'top'
+
+        const tw = ctx.measureText('M')
+        const fillGradient = ctx.createLinearGradient(x, y, x, y + tw.width)
+        const strokeGradient = ctx.createLinearGradient(x, y, x, y + tw.width)
+        const thinStrokeGrad = ctx.createLinearGradient(x, y, x, y + tw.width)
+
+        const el = [].slice.call($wrapper.current.querySelectorAll('form div'))[
+          i
+        ] as HTMLElement
+        const $input = el.firstElementChild as HTMLInputElement
+
+        el.style.setProperty('--tx', `${x}px`)
+        el.style.setProperty('--ty', `${y * 1.7}px`)
+        el.style.setProperty('--tw', `${tw.width * 2}px`)
+
+        const k = $input.name
+        const v = $input.value.trim().toUpperCase()
+
+        if ('params' in state) {
+          state.params.set(k, v.toLowerCase())
+        }
+
+        return [
+          { tw, fillGradient, strokeGradient },
+          () => {
+            {
+              ctx.lineWidth = 3
+              ctx.fillStyle = fillGradient
+              ctx.strokeStyle = strokeGradient
+              ctx.strokeText(v, x, y)
+            }
+
+            {
+              ctx.lineWidth = 1
+              ctx.strokeStyle = thinStrokeGrad
+
+              thinStrokeGrad.addColorStop(0.8, '#1E3278ee')
+              thinStrokeGrad.addColorStop(0.5, '#1E3278ee')
+
+              ctx.strokeText(v, x, y)
+            }
+
+            ctx.fillText(v, x, y)
+          }
+        ]
+      } catch (e) {
+        console.warn(e)
         return [{}, () => null]
       }
-
-      ctx.font = `${s}px impact`
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'top'
-
-      const tw = ctx.measureText('M')
-      const fillGradient = ctx.createLinearGradient(x, y, x, y + tw.width)
-      const strokeGradient = ctx.createLinearGradient(x, y, x, y + tw.width)
-      const thinStrokeGrad = ctx.createLinearGradient(x, y, x, y + tw.width)
-
-      const el = [].slice.call($wrapper.current.querySelectorAll('form div'))[
-        i
-      ] as HTMLElement
-      const $input = el.firstElementChild as HTMLInputElement
-
-      el.style.setProperty('--tx', `${x}px`)
-      el.style.setProperty('--ty', `${y * 1.7}px`)
-      el.style.setProperty('--tw', `${tw.width * 2}px`)
-
-      const k = $input.name
-      const v = $input.value.trim().toUpperCase()
-
-      if ('params' in state) {
-        state.params.set(k, v.toLowerCase())
-      }
-
-      return [
-        { tw, fillGradient, strokeGradient },
-        () => {
-          {
-            ctx.lineWidth = 3
-            ctx.fillStyle = fillGradient
-            ctx.strokeStyle = strokeGradient
-            ctx.strokeText(v, x, y)
-          }
-
-          {
-            ctx.lineWidth = 1
-            ctx.strokeStyle = thinStrokeGrad
-
-            thinStrokeGrad.addColorStop(0.8, '#1E3278ee')
-            thinStrokeGrad.addColorStop(0.5, '#1E3278ee')
-
-            ctx.strokeText(v, x, y)
-          }
-
-          ctx.fillText(v, x, y)
-        }
-      ]
     }
 
     const render = () => {
@@ -197,7 +202,7 @@ export default () => {
       }
 
       ctx.save()
-      ctx.scale(dpr, dpr * 1.7)
+      ctx.scale(1, 1 + 0.7)
 
       // MUDASIR
       {
@@ -205,17 +210,23 @@ export default () => {
         const y = (cy - 6 * r) / 1.7
         const s = 52 * r
 
-        const [{ fillGradient, strokeGradient }, draw] = addText(0, x, y, s)
+        if (x) {
+          const [{ fillGradient, strokeGradient }, draw] = addText(0, x, y, s)
 
-        fillGradient.addColorStop(0, '#C34E19')
-        fillGradient.addColorStop(1, '#37AD1E')
+          if (fillGradient instanceof CanvasGradient) {
+            fillGradient.addColorStop(0, '#C34E19')
+            fillGradient.addColorStop(1, '#37AD1E')
+          }
 
-        strokeGradient.addColorStop(0, '#3C225300')
-        strokeGradient.addColorStop(0.5, '#3C225355')
-        strokeGradient.addColorStop(0.8, '#1E327855')
-        strokeGradient.addColorStop(1.0, '#1E3278')
+          if (strokeGradient instanceof CanvasGradient) {
+            strokeGradient.addColorStop(0, '#3C225300')
+            strokeGradient.addColorStop(0.5, '#3C225355')
+            strokeGradient.addColorStop(0.8, '#1E327855')
+            strokeGradient.addColorStop(1.0, '#1E3278')
+          }
 
-        draw()
+          draw()
+        }
       }
 
       // SALMAN
@@ -224,18 +235,25 @@ export default () => {
         const y = (cy + (height / 3.9) * r) / 1.7
         const s = 40 * r
 
-        const [{ fillGradient, strokeGradient }, draw] = addText(1, x, y, s)
+        if (x) {
+          const [{ fillGradient, strokeGradient }, draw] = addText(1, x, y, s)
 
-        ctx.textAlign = 'center'
-        fillGradient.addColorStop(0, '#AC6867')
-        fillGradient.addColorStop(1, '#B74956')
+          ctx.textAlign = 'center'
 
-        strokeGradient.addColorStop(0, '#3C2253')
-        strokeGradient.addColorStop(0.5, '#3C225355')
-        strokeGradient.addColorStop(0.8, '#1E327855')
-        strokeGradient.addColorStop(1.0, '#1E3278')
+          if (fillGradient instanceof CanvasGradient) {
+            fillGradient.addColorStop(0, '#AC6867')
+            fillGradient.addColorStop(1, '#B74956')
+          }
 
-        draw()
+          if (strokeGradient instanceof CanvasGradient) {
+            strokeGradient.addColorStop(0, '#3C2253')
+            strokeGradient.addColorStop(0.5, '#3C225355')
+            strokeGradient.addColorStop(0.8, '#1E327855')
+            strokeGradient.addColorStop(1.0, '#1E3278')
+          }
+
+          draw()
+        }
       }
 
       ctx.restore()

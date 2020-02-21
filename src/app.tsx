@@ -43,7 +43,7 @@ const Wrapper = styled.div`
       caret-color: #00f;
       color: #fff;
       font-size: calc(var(--tw) / 1.4);
-      font-family: Impact;
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       letter-spacing: 0.02em;
       text-transform: uppercase;
       border: 0;
@@ -135,7 +135,7 @@ export default () => {
       () => void
     ] => {
       try {
-        ctx.font = `${s}px impact`
+        ctx.font = `${s}px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif`
         ctx.textAlign = 'left'
         ctx.textBaseline = 'top'
 

@@ -293,7 +293,6 @@ export default () => {
   }, [$wrapper])
 
   const events: any = {
-    onFocus: e => e.target.select(),
     onKeyDown: e => /enter|escape/i.test(e.key) && e.currentTarget.blur()
   }
 

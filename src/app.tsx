@@ -84,12 +84,13 @@ export default () => {
         ctx.backingStorePixelRatio ||
         1)
 
-    cv.width = window.innerWidth
-    cv.height = window.innerHeight
     ctx.imageSmoothingEnabled = true
 
     const update = () => {
       ctx.clearRect(0, 0, cv.width, cv.height)
+
+      cv.width = window.innerWidth
+      cv.height = window.innerHeight
 
       const s = `?${state.params.toString()}`
 
